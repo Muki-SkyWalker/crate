@@ -223,4 +223,40 @@ public class JoinTest extends CrateDummyClusterServiceUnitTest {
         assertThat(join.left(), instanceOf(Join.class));
         assertThat(((Join)join.left()).joinPhase(), instanceOf(HashJoinPhase.class));
     }
+
+    @Test
+    public void testBlockNestedLoopWhenLeftSideIsSmallerAndOneExecutionNode() {
+        TableStats tableStats = new TableStats();
+        ObjectObjectHashMap<RelationName, TableStats.Stats> stats = new ObjectObjectHashMap<>();
+        stats.put(T3.T1_INFO.ident(), new TableStats.Stats(23, 64));
+        stats.put(T3.T4_INFO.ident(), new TableStats.Stats(42, 64));
+        tableStats.updateTableStats(stats);
+        e = SQLExecutor.builder(clusterService)
+            .addDocTable(T3.T1_INFO)
+            .addDocTable(T3.T4_INFO)
+            .setTableStats(tableStats)
+            .build();
+        {
+            MultiSourceSelect mss = e.analyze("select * from t1, t4");
+
+            LogicalPlan operator = createLogicalPlan(mss, tableStats);
+            assertThat(operator, instanceOf(NestedLoopJoin.class));
+
+            Join join = buildJoin(operator);
+            assertThat(join.joinPhase(), instanceOf(NestedLoopPhase.class));
+            NestedLoopPhase joinPhase = (NestedLoopPhase) join.joinPhase();
+            assertThat(joinPhase.blockNestedLoop, is(true));
+        }
+        {
+            MultiSourceSelect mss = e.analyze("select * from t4, t1");
+
+            LogicalPlan operator = createLogicalPlan(mss, tableStats);
+            assertThat(operator, instanceOf(NestedLoopJoin.class));
+
+            Join join = buildJoin(operator);
+            assertThat(join.joinPhase(), instanceOf(NestedLoopPhase.class));
+            NestedLoopPhase joinPhase = (NestedLoopPhase) join.joinPhase();
+            assertThat(joinPhase.blockNestedLoop, is(true));
+        }
+    }
 }

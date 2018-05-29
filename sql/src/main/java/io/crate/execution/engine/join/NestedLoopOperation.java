@@ -21,16 +21,24 @@
 
 package io.crate.execution.engine.join;
 
+import com.google.common.annotations.VisibleForTesting;
+import io.crate.breaker.RamAccountingContext;
+import io.crate.breaker.RowAccounting;
+import io.crate.breaker.RowAccountingWithEstimators;
 import io.crate.concurrent.CompletionListenable;
 import io.crate.data.BatchIterator;
 import io.crate.data.FilteringBatchIterator;
 import io.crate.data.ListenableBatchIterator;
 import io.crate.data.Row;
 import io.crate.data.RowConsumer;
+import io.crate.data.join.BlockSizeCalculator;
 import io.crate.data.join.CombinedRow;
 import io.crate.data.join.JoinBatchIterators;
 import io.crate.planner.node.dql.join.JoinType;
+import io.crate.types.DataType;
+import org.elasticsearch.common.breaker.CircuitBreaker;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 
@@ -45,7 +53,13 @@ public class NestedLoopOperation implements CompletionListenable {
                                int numRightCols,
                                RowConsumer nlResultConsumer,
                                Predicate<Row> joinPredicate,
-                               JoinType joinType) {
+                               JoinType joinType,
+                               CircuitBreaker circuitBreaker,
+                               RamAccountingContext ramAccountingContext,
+                               List<DataType> leftSideColumnTypes,
+                               long estimatedRowsSizeLeft,
+                               long estimatedNumberOfRowsLeft,
+                               boolean blockNestedLoop) {
 
         CompletableFuture.allOf(leftBatchIterator, rightBatchIterator)
             .whenComplete((result, failure) -> {
@@ -56,7 +70,13 @@ public class NestedLoopOperation implements CompletionListenable {
                         rightBatchIterator.join(),
                         numRightCols,
                         joinType,
-                        joinPredicate
+                        joinPredicate,
+                        circuitBreaker,
+                        ramAccountingContext,
+                        leftSideColumnTypes,
+                        estimatedRowsSizeLeft,
+                        estimatedNumberOfRowsLeft,
+                        blockNestedLoop
                     ), completionFuture);
                     nlResultConsumer.accept(nlIterator, null);
                 } else {
@@ -78,20 +98,32 @@ public class NestedLoopOperation implements CompletionListenable {
         return JoinOperations.getBatchConsumer(rightBatchIterator, true);
     }
 
-    private static BatchIterator<Row> createNestedLoopIterator(BatchIterator<Row> left,
-                                                               int leftNumCols,
-                                                               BatchIterator<Row> right,
-                                                               int rightNumCols,
-                                                               JoinType joinType,
-                                                               Predicate<Row> joinCondition) {
-        CombinedRow combiner = new CombinedRow(leftNumCols, rightNumCols);
+    @VisibleForTesting
+    static BatchIterator<Row> createNestedLoopIterator(BatchIterator<Row> left,
+                                                       int leftNumCols,
+                                                       BatchIterator<Row> right,
+                                                       int rightNumCols,
+                                                       JoinType joinType,
+                                                       Predicate<Row> joinCondition,
+                                                       CircuitBreaker circuitBreaker,
+                                                       RamAccountingContext ramAccountingContext,
+                                                       List<DataType> leftSideColumnTypes,
+                                                       long estimatedRowsSizeLeft,
+                                                       long estimatedNumberOfRowsLeft,
+                                                       boolean blockNestedLoop) {
+        final CombinedRow combiner = new CombinedRow(leftNumCols, rightNumCols);
         switch (joinType) {
             case CROSS:
-                return JoinBatchIterators.crossJoin(left, right, combiner);
+                return buildCrossJoinBatchIterator(left, right, combiner,
+                    circuitBreaker, ramAccountingContext, leftSideColumnTypes,
+                    estimatedRowsSizeLeft, estimatedNumberOfRowsLeft, blockNestedLoop);
 
             case INNER:
                 return new FilteringBatchIterator<>(
-                    JoinBatchIterators.crossJoin(left, right, combiner), joinCondition);
+                    buildCrossJoinBatchIterator(left, right, combiner,
+                        circuitBreaker, ramAccountingContext, leftSideColumnTypes,
+                        estimatedRowsSizeLeft, estimatedNumberOfRowsLeft, blockNestedLoop),
+                    joinCondition);
 
             case LEFT:
                 return JoinBatchIterators.leftJoin(left, right, combiner, joinCondition);
@@ -110,6 +142,24 @@ public class NestedLoopOperation implements CompletionListenable {
 
             default:
                 throw new AssertionError("Invalid joinType: " + joinType);
+        }
+    }
+
+    private static BatchIterator<Row> buildCrossJoinBatchIterator(BatchIterator<Row> left,
+                                                                  BatchIterator<Row> right,
+                                                                  CombinedRow combiner,
+                                                                  CircuitBreaker circuitBreaker,
+                                                                  RamAccountingContext ramAccountingContext,
+                                                                  List<DataType> leftSideColumnTypes,
+                                                                  long estimatedRowsSizeLeft,
+                                                                  long estimatedNumberOfRowsLeft,
+                                                                  boolean blockNestedLoop) {
+        if (blockNestedLoop) {
+            BlockSizeCalculator blockSizeCalculator = new RamBlockSizeCalculator(circuitBreaker, estimatedRowsSizeLeft, estimatedNumberOfRowsLeft);
+            RowAccounting rowAccounting = new RowAccountingWithEstimators(leftSideColumnTypes, ramAccountingContext);
+            return JoinBatchIterators.crossJoinBlockNL(left, right, combiner, blockSizeCalculator, rowAccounting);
+        } else {
+            return JoinBatchIterators.crossJoinNL(left, right, combiner);
         }
     }
 }
