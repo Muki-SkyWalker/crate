@@ -42,6 +42,12 @@ None
 Changes
 =======
 
+- Improved performance of queries using an array access inside the ``WHERE``
+  clause. E.g.::
+
+    SELECT * FROM t
+    WHERE int_array_col[1] = 123
+
 - Added the full PostgreSQL syntax of the ``BEGIN`` statement and the
   ``COMMIT`` statement.
   This improves the support for clients that are based on the Postgres wire
