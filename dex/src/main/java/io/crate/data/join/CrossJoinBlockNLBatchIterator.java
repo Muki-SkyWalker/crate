@@ -29,6 +29,7 @@ import io.crate.data.Row;
 import io.crate.data.UnsafeArrayRow;
 
 import java.util.ArrayList;
+import java.util.function.IntSupplier;
 
 /**
  * This BatchIterator is used for both CrossJoins and InnerJoins as for the InnerJoins
@@ -57,7 +58,7 @@ import java.util.ArrayList;
  */
 public class CrossJoinBlockNLBatchIterator extends JoinBatchIterator<Row, Row, Row> {
 
-    private final BlockSizeCalculator blockSizeCalculator;
+    private final IntSupplier blockSizeCalculator;
     private final ArrayList<Object[]> blockBuffer;
     private final UnsafeArrayRow rowWrapper;
     private final RowAccounting rowAccounting;
@@ -69,7 +70,7 @@ public class CrossJoinBlockNLBatchIterator extends JoinBatchIterator<Row, Row, R
     CrossJoinBlockNLBatchIterator(BatchIterator<Row> left,
                                   BatchIterator<Row> right,
                                   ElementCombiner<Row, Row, Row> combiner,
-                                  BlockSizeCalculator blockSizeCalculator,
+                                  IntSupplier blockSizeCalculator,
                                   RowAccounting rowAccounting) {
         super(left, right, combiner);
         this.blockSizeCalculator = blockSizeCalculator;
@@ -81,7 +82,7 @@ public class CrossJoinBlockNLBatchIterator extends JoinBatchIterator<Row, Row, R
 
     private void resizeBlockBuffer() {
         rowAccounting.release();
-        blockBufferMaxSize = blockSizeCalculator.calculateBlockSize();
+        blockBufferMaxSize = blockSizeCalculator.getAsInt();
         blockBuffer.clear();
         blockBuffer.ensureCapacity(blockBufferMaxSize);
         bufferPos = -1;

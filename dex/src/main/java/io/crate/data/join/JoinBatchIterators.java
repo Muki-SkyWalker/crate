@@ -26,6 +26,7 @@ import io.crate.breaker.RowAccounting;
 import io.crate.data.BatchIterator;
 import io.crate.data.Row;
 
+import java.util.function.IntSupplier;
 import java.util.function.Predicate;
 
 /**
@@ -70,7 +71,7 @@ public final class JoinBatchIterators {
     public static BatchIterator<Row> crossJoinBlockNL(BatchIterator<Row> left,
                                                       BatchIterator<Row> right,
                                                       ElementCombiner<Row, Row, Row> combiner,
-                                                      BlockSizeCalculator blockSizeCalculator,
+                                                      IntSupplier blockSizeCalculator,
                                                       RowAccounting rowAccounting) {
         return new CrossJoinBlockNLBatchIterator(left, right, combiner, blockSizeCalculator, rowAccounting);
     }

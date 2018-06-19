@@ -23,13 +23,14 @@
 package io.crate.execution.engine.join;
 
 import io.crate.data.Paging;
-import io.crate.data.join.BlockSizeCalculator;
 import org.elasticsearch.common.breaker.CircuitBreaker;
+
+import java.util.function.IntSupplier;
 
 /**
  * Calculates the number of rows to fit in a block, based on the available memory, the number of rows and the row size.
  */
-public class RamBlockSizeCalculator implements BlockSizeCalculator {
+public class RamBlockSizeCalculator implements IntSupplier {
 
     static final int DEFAULT_BLOCK_SIZE = Paging.PAGE_SIZE;
 
@@ -45,7 +46,8 @@ public class RamBlockSizeCalculator implements BlockSizeCalculator {
         this.numberOfRowsForLeft = numberOfRowsForLeft;
     }
 
-    public int calculateBlockSize() {
+    @Override
+    public int getAsInt() {
         if (statisticsUnavailable(circuitBreaker, estimatedRowSizeForLeft, numberOfRowsForLeft)) {
             return DEFAULT_BLOCK_SIZE;
         }

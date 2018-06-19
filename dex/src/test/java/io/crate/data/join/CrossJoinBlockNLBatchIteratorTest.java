@@ -41,6 +41,7 @@ import org.junit.runner.RunWith;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 import static io.crate.data.SentinelRow.SENTINEL;
@@ -56,7 +57,7 @@ public class CrossJoinBlockNLBatchIteratorTest {
     private final int id;
     private final Supplier<BatchIterator<Row>> left;
     private final Supplier<BatchIterator<Row>> right;
-    private final BlockSizeCalculator blockSizeCalculator;
+    private final IntSupplier blockSizeCalculator;
     private final TestingRowAccounting testingRowAccounting;
     private final List<Object[]> expectedResults;
     private int expectedRowsLeft;
@@ -65,7 +66,7 @@ public class CrossJoinBlockNLBatchIteratorTest {
     public CrossJoinBlockNLBatchIteratorTest(@Name("id") int id,
                                              Supplier<BatchIterator<Row>> left,
                                              Supplier<BatchIterator<Row>> right,
-                                             BlockSizeCalculator blockSizeCalculator) throws Exception {
+                                             IntSupplier blockSizeCalculator) throws Exception {
 
         this.id = id;
         this.left = left;
@@ -119,7 +120,7 @@ public class CrossJoinBlockNLBatchIteratorTest {
     private static Object[] $(int id,
                               Supplier<BatchIterator<Row>> left,
                               Supplier<BatchIterator<Row>> right,
-                              BlockSizeCalculator blockSize) {
+                              IntSupplier blockSize) {
         return new Object[]{
             id, left, right, blockSize
         };
@@ -139,7 +140,7 @@ public class CrossJoinBlockNLBatchIteratorTest {
         tester.verifyResultAndEdgeCaseBehaviour(expectedResults,
             it -> {
                 assertThat(testingRowAccounting.numRows, is(expectedRowsLeft));
-                assertThat(testingRowAccounting.numReleaseCalled, greaterThan(expectedRowsLeft / blockSizeCalculator.calculateBlockSize()));
+                assertThat(testingRowAccounting.numReleaseCalled, greaterThan(expectedRowsLeft / blockSizeCalculator.getAsInt()));
             });
     }
 
@@ -158,7 +159,7 @@ public class CrossJoinBlockNLBatchIteratorTest {
         tester.verifyResultAndEdgeCaseBehaviour(expectedResults,
             it -> {
                 assertThat(testingRowAccounting.numRows, is(expectedRowsLeft));
-                assertThat(testingRowAccounting.numReleaseCalled, greaterThan(expectedRowsLeft / blockSizeCalculator.calculateBlockSize()));
+                assertThat(testingRowAccounting.numReleaseCalled, greaterThan(expectedRowsLeft / blockSizeCalculator.getAsInt()));
             });
     }
 

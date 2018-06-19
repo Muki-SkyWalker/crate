@@ -31,7 +31,6 @@ import io.crate.data.FilteringBatchIterator;
 import io.crate.data.ListenableBatchIterator;
 import io.crate.data.Row;
 import io.crate.data.RowConsumer;
-import io.crate.data.join.BlockSizeCalculator;
 import io.crate.data.join.CombinedRow;
 import io.crate.data.join.JoinBatchIterators;
 import io.crate.planner.node.dql.join.JoinType;
@@ -40,6 +39,7 @@ import org.elasticsearch.common.breaker.CircuitBreaker;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.IntSupplier;
 import java.util.function.Predicate;
 
 
@@ -155,7 +155,7 @@ public class NestedLoopOperation implements CompletionListenable {
                                                                   long estimatedNumberOfRowsLeft,
                                                                   boolean blockNestedLoop) {
         if (blockNestedLoop) {
-            BlockSizeCalculator blockSizeCalculator = new RamBlockSizeCalculator(circuitBreaker, estimatedRowsSizeLeft, estimatedNumberOfRowsLeft);
+            IntSupplier blockSizeCalculator = new RamBlockSizeCalculator(circuitBreaker, estimatedRowsSizeLeft, estimatedNumberOfRowsLeft);
             RowAccounting rowAccounting = new RowAccountingWithEstimators(leftSideColumnTypes, ramAccountingContext);
             return JoinBatchIterators.crossJoinBlockNL(left, right, combiner, blockSizeCalculator, rowAccounting);
         } else {

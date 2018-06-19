@@ -40,24 +40,24 @@ public class RamBlockSizeCalculatorTest {
         when(circuitBreaker.getLimit()).thenReturn(110L);
         when(circuitBreaker.getUsed()).thenReturn(10L);
         RamBlockSizeCalculator blockCalculator100leftRows = new RamBlockSizeCalculator(circuitBreaker, 5, 100);
-        assertThat(blockCalculator100leftRows.calculateBlockSize(), is(20));
+        assertThat(blockCalculator100leftRows.getAsInt(), is(20));
         RamBlockSizeCalculator blockCalculator10LeftRows = new RamBlockSizeCalculator(circuitBreaker, 5, 10);
-        assertThat(blockCalculator10LeftRows.calculateBlockSize(), is(10));
+        assertThat(blockCalculator10LeftRows.getAsInt(), is(10));
     }
 
     @Test
     public void testCalculationOfBlockSizeWithMissingStats() {
         when(circuitBreaker.getLimit()).thenReturn(-1L);
         RamBlockSizeCalculator blockSizeCalculator = new RamBlockSizeCalculator(circuitBreaker, 10, 10);
-        assertThat(blockSizeCalculator.calculateBlockSize(), is(DEFAULT_BLOCK_SIZE));
+        assertThat(blockSizeCalculator.getAsInt(), is(DEFAULT_BLOCK_SIZE));
 
         when(circuitBreaker.getLimit()).thenReturn(110L);
         when(circuitBreaker.getUsed()).thenReturn(10L);
         RamBlockSizeCalculator blockCalculatorNoNumberOrRowsStats = new RamBlockSizeCalculator(circuitBreaker, 10, -1);
-        assertThat(blockCalculatorNoNumberOrRowsStats.calculateBlockSize(), is(DEFAULT_BLOCK_SIZE));
+        assertThat(blockCalculatorNoNumberOrRowsStats.getAsInt(), is(DEFAULT_BLOCK_SIZE));
 
         RamBlockSizeCalculator blockCalculatorNoRowSizeStats = new RamBlockSizeCalculator(circuitBreaker, -1, 10);
-        assertThat(blockCalculatorNoRowSizeStats.calculateBlockSize(), is(DEFAULT_BLOCK_SIZE));
+        assertThat(blockCalculatorNoRowSizeStats.getAsInt(), is(DEFAULT_BLOCK_SIZE));
     }
 
     @Test
@@ -65,7 +65,7 @@ public class RamBlockSizeCalculatorTest {
         when(circuitBreaker.getLimit()).thenReturn(110L);
         when(circuitBreaker.getUsed()).thenReturn(110L);
         RamBlockSizeCalculator blockSizeCalculator = new RamBlockSizeCalculator(circuitBreaker, 10, 10);
-        assertThat(blockSizeCalculator.calculateBlockSize(), is(10));
+        assertThat(blockSizeCalculator.getAsInt(), is(10));
     }
 
     @Test
@@ -73,7 +73,7 @@ public class RamBlockSizeCalculatorTest {
         when(circuitBreaker.getLimit()).thenReturn(Integer.MAX_VALUE + 1L);
         when(circuitBreaker.getUsed()).thenReturn(0L);
         RamBlockSizeCalculator blockSizeCalculator = new RamBlockSizeCalculator(circuitBreaker, 1, 1);
-        assertThat(blockSizeCalculator.calculateBlockSize(), is(1));
+        assertThat(blockSizeCalculator.getAsInt(), is(1));
     }
 
     @Test
@@ -81,6 +81,6 @@ public class RamBlockSizeCalculatorTest {
         when(circuitBreaker.getLimit()).thenReturn(DEFAULT_BLOCK_SIZE * 2L);
         when(circuitBreaker.getUsed()).thenReturn(0L);
         RamBlockSizeCalculator blockSizeCalculator = new RamBlockSizeCalculator(circuitBreaker, 1, DEFAULT_BLOCK_SIZE * 2L);
-        assertThat(blockSizeCalculator.calculateBlockSize(), is(DEFAULT_BLOCK_SIZE));
+        assertThat(blockSizeCalculator.getAsInt(), is(DEFAULT_BLOCK_SIZE));
     }
 }
