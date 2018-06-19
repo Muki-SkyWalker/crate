@@ -51,6 +51,7 @@ public class InMemoryBatchIterator<T> implements BatchIterator<T> {
     }
 
     /**
+     * @param items An iterable over the items, should be repeatable.
      * @param sentinel the value for {@link #currentElement()} if un-positioned
      */
     public static <T> BatchIterator<T> of(Iterable<? extends T> items, @Nullable T sentinel) {

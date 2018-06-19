@@ -51,6 +51,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class PKLookupOperation {
@@ -93,7 +94,7 @@ public final class PKLookupOperation {
                     ))
                     .filter(GetResult::isExists);
             });
-        return InMemoryBatchIterator.of(getResultStream::iterator, null);
+        return InMemoryBatchIterator.of(getResultStream.collect(Collectors.toList()), null);
     }
 
 
@@ -157,7 +158,7 @@ public final class PKLookupOperation {
                         FetchSourceContext.FETCH_SOURCE
                     ))
                     .map(resultToRow)
-                    ::iterator, null);
+                    .collect(Collectors.toList()), null);
             consumer.accept(batchIterator, null);
         }
     }
