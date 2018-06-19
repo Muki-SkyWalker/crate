@@ -55,7 +55,7 @@ import java.util.ArrayList;
  *     repeat
  * </pre>
  */
-public class CrossJoinBlockNLBatchIterator<L, R, C> extends JoinBatchIterator<L, R, C> {
+public class CrossJoinBlockNLBatchIterator extends JoinBatchIterator<Row, Row, Row> {
 
     private final BlockSizeCalculator blockSizeCalculator;
     private final ArrayList<Object[]> blockBuffer;
@@ -66,9 +66,9 @@ public class CrossJoinBlockNLBatchIterator<L, R, C> extends JoinBatchIterator<L,
     private int bufferPos;
     private boolean rightInitialized;
 
-    CrossJoinBlockNLBatchIterator(BatchIterator<L> left,
-                                  BatchIterator<R> right,
-                                  ElementCombiner<L, R, C> combiner,
+    CrossJoinBlockNLBatchIterator(BatchIterator<Row> left,
+                                  BatchIterator<Row> right,
+                                  ElementCombiner<Row, Row, Row> combiner,
                                   BlockSizeCalculator blockSizeCalculator,
                                   RowAccounting rowAccounting) {
         super(left, right, combiner);
@@ -113,7 +113,7 @@ public class CrossJoinBlockNLBatchIterator<L, R, C> extends JoinBatchIterator<L,
                 activeIt = left;
                 while (blockBuffer.size() < blockBufferMaxSize) {
                     if (left.moveNext()) {
-                        Row row = (Row) left.currentElement();
+                        Row row = left.currentElement();
                         rowAccounting.accountForAndMaybeBreak(row);
                         blockBuffer.add(row.materialize());
                     } else {
@@ -154,7 +154,7 @@ public class CrossJoinBlockNLBatchIterator<L, R, C> extends JoinBatchIterator<L,
 
         combiner.setRight(right.currentElement());
         rowWrapper.cells(blockBuffer.get(bufferPos));
-        combiner.setLeft((L) rowWrapper);
+        combiner.setLeft(rowWrapper);
         bufferPos++;
         return true;
     }

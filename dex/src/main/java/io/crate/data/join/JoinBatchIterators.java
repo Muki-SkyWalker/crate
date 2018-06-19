@@ -24,6 +24,7 @@ package io.crate.data.join;
 
 import io.crate.breaker.RowAccounting;
 import io.crate.data.BatchIterator;
+import io.crate.data.Row;
 
 import java.util.function.Predicate;
 
@@ -66,12 +67,12 @@ public final class JoinBatchIterators {
     /**
      * Create a BlockNestedLoop BatchIterator that creates a cross-join of {@code left} and {@code right}.
      */
-    public static <L, R, C> BatchIterator<C> crossJoinBlockNL(BatchIterator<L> left,
-                                                              BatchIterator<R> right,
-                                                              ElementCombiner<L, R, C> combiner,
-                                                              BlockSizeCalculator blockSizeCalculator,
-                                                              RowAccounting rowAccounting) {
-        return new CrossJoinBlockNLBatchIterator<>(left, right, combiner, blockSizeCalculator, rowAccounting);
+    public static BatchIterator<Row> crossJoinBlockNL(BatchIterator<Row> left,
+                                                      BatchIterator<Row> right,
+                                                      ElementCombiner<Row, Row, Row> combiner,
+                                                      BlockSizeCalculator blockSizeCalculator,
+                                                      RowAccounting rowAccounting) {
+        return new CrossJoinBlockNLBatchIterator(left, right, combiner, blockSizeCalculator, rowAccounting);
     }
 
     /**
