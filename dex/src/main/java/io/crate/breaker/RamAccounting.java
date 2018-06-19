@@ -31,9 +31,9 @@ public interface RamAccounting {
 
     /**
      * Accounts for the supplied number of bytes
-     * @throws RuntimeException if too many bytes have been added.
+     * @throws CircuitBreakingException if too many bytes have been added.
      */
-    void addBytes(long bytes) throws RuntimeException;
+    void addBytes(long bytes);
 
     /**
      * Stops accounting for previously accounted rows.
