@@ -144,7 +144,7 @@ class NestedLoopJoin extends TwoInputPlan {
         LogicalPlan rightLogicalPlan = rhs;
         isDistributed = isDistributed &&
                         (!left.resultDescription().nodeIds().isEmpty() && !right.resultDescription().nodeIds().isEmpty());
-        boolean blockNlPossible = !isDistributed && isBlockNlPossible(left, leftLogicalPlan, right, rightLogicalPlan);
+        boolean blockNlPossible = !isDistributed && isBlockNlPossible(left, right);
 
         if (joinType.supportsInversion() &&
             (isDistributed && lhs.numExpectedRows() < rhs.numExpectedRows() && orderByFromLeft == null) ||
@@ -304,12 +304,8 @@ class NestedLoopJoin extends TwoInputPlan {
         return visitor.visitNestedLoopJoin(this, context);
     }
 
-    private static boolean isBlockNlPossible(ExecutionPlan left,
-                                             LogicalPlan leftPlan,
-                                             ExecutionPlan right,
-                                             LogicalPlan rightPlan) {
+    private static boolean isBlockNlPossible(ExecutionPlan left, ExecutionPlan right) {
         return left.resultDescription().orderBy() == null &&
-               leftPlan.numExpectedRows() != -1 && rightPlan.numExpectedRows() != -1 &&
                left.resultDescription().nodeIds().size() <= 1 &&
                left.resultDescription().nodeIds().equals(right.resultDescription().nodeIds());
     }
