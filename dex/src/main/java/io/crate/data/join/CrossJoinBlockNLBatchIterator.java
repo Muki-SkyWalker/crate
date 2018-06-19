@@ -35,16 +35,9 @@ import java.util.function.IntSupplier;
  * This BatchIterator is used for both CrossJoins and InnerJoins as for the InnerJoins
  * the joinCondition is tested later on as a filter Projection.
  *
- * The Block Nested Loop algorithm is used to implement the cross join.
+ * The Block Nested Loop algorithm is used to implement this cross join. For the regular
+ * Nested Loop, see {@link CrossJoinNLBatchIterator}.
  *
- * <pre>
- *     // Nested Loop
- *     for (leftRow in left) {
- *         for (rightRow in right) {
- *             match?
- *         }
- *     }
- * </pre>
  * <pre>
  *     // Block Nested Loop
  *     fill buffer with next items from the left
